@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+source_dir=${DOTFILES_SOURCE:-${XDG_DATA_HOME:-$HOME/.local/share}/john-dotfiles}
+exec sh "$source_dir/scripts/manage.sh" "$@"

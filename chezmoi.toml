@@ -1,0 +1,3 @@
+# Deliberately isolated from the user's default chezmoi configuration.
+[diff]
+    pager = ""

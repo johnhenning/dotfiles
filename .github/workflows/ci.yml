@@ -1,0 +1,66 @@
+name: Dotfiles checks
+on:
+  push:
+    branches: [main]
+  pull_request: {}
+  workflow_call: {}
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - name: Install test shells (disposable Linux runner)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y zsh tmux
+      - name: Bootstrap manager with preview only
+        run: sh install.sh --source "$GITHUB_WORKSPACE" > /dev/null
+      - name: Shell syntax
+        run: |
+          for file in install.sh scripts/*.sh; do sh -n "$file"; done
+          for file in home/dot_bashrc home/dot_bash_profile home/dot_config/bash/init.bash; do bash -n "$file"; done
+          for file in home/dot_zshrc home/dot_config/zsh/init.zsh; do zsh -n "$file"; done
+      - name: Isolated configuration and PATH tests
+        run: |
+          export DOTFILES_CHEZMOI="$HOME/.local/share/john-dotfiles-tools/2.73.3/chezmoi"
+          python3 -m unittest discover -s tests -v
+  editor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install pinned Neovim in isolated home
+        shell: bash
+        run: |
+          sudo apt-get update && sudo apt-get install -y zsh tmux direnv
+          export DOTFILES_SOURCE="$GITHUB_WORKSPACE"
+          export HOME="$RUNNER_TEMP/dotfiles-home"
+          mkdir -p "$HOME"
+          sh scripts/tools.sh --apply
+          printf '%s\n' "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Restore locked NvChad plugins in disposable XDG directories
+        shell: bash
+        run: |
+          export HOME="$RUNNER_TEMP/dotfiles-home"
+          export XDG_CONFIG_HOME="$HOME/.config" XDG_DATA_HOME="$HOME/.local/share" XDG_STATE_HOME="$HOME/.local/state" XDG_CACHE_HOME="$HOME/.cache"
+          mkdir -p "$XDG_CONFIG_HOME/nvim"
+          cp -R home/dot_config/nvim/. "$XDG_CONFIG_HOME/nvim/"
+          mv "$XDG_CONFIG_HOME/nvim/dot_stylua.toml" "$XDG_CONFIG_HOME/nvim/.stylua.toml"
+          nvim --headless '+Lazy! restore' +qa
+          nvim --headless '+lua local ok,err=pcall(function() assert(vim.g.mapleader == " "); assert(require("chadrc").base46.theme == "onedark"); assert(vim.wait(5000,function() return vim.fn.maparg(";", "n") == ":" end)) end); if not ok then print(err); vim.cmd("cquit 1") end' +qa
+          cmp home/dot_config/nvim/lazy-lock.json "$XDG_CONFIG_HOME/nvim/lazy-lock.json"
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          lock = json.loads(pathlib.Path('home/dot_config/nvim/lazy-lock.json').read_text())
+          for name, spec in lock.items():
+              path = pathlib.Path(os.environ['XDG_DATA_HOME']) / 'nvim/lazy' / name
+              actual = subprocess.check_output(['git', '-C', str(path), 'rev-parse', 'HEAD'], text=True).strip()
+              assert actual == spec['commit'], (name, actual, spec['commit'])
+          PY
