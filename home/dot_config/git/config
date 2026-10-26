@@ -1,0 +1,7 @@
+# Identity and signing preferences stay in the local include.
+[init]
+    defaultBranch = main
+[core]
+    excludesFile = ~/.config/git/ignore
+[include]
+    path = ~/.config/git/local.config

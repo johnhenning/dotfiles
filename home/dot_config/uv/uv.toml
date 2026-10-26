@@ -1,0 +1,3 @@
+# Python versions/environments are project-managed by uv, not global shims.
+python-preference = "managed"
+python-downloads = "automatic"

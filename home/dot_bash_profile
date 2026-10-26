@@ -1,0 +1,2 @@
+# Login terminals share the same interactive setup.
+[ -r "$HOME/.bashrc" ] && . "$HOME/.bashrc"

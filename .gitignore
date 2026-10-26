@@ -1,0 +1,12 @@
+.env
+.env.*
+!.envrc.example
+*.key
+*.pem
+*.local
+*.local.*
+!examples/path.local.sh
+dist/
+.cache/
+__pycache__/
+.DS_Store

@@ -1,0 +1,3 @@
+# Only interactive shells need prompt, completion and directory hooks.
+case $- in *i*) ;; *) return ;; esac
+. "${XDG_CONFIG_HOME:-$HOME/.config}/bash/init.bash"
