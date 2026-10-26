@@ -11,20 +11,23 @@ contain no credentials; sign in to 1Password and individual services afterward.
 Requires macOS or Linux on ARM64/x86-64, with curl, tar and Git. Debian/Ubuntu,
 Fedora and WSL use the same configs. Native Windows shells are not supported.
 
-Preview first (downloads the repo and a pinned, checksum-verified chezmoi):
+Install (downloads the repo and a pinned, checksum-verified chezmoi, then asks
+for confirmation before backing up and applying configs):
 
 ```sh
 curl -fsSL https://johnhenning.dev/tools/dotfiles/install.sh | sh
 ```
 
-Apply after reviewing the diff:
+To preview config changes without applying them:
 
 ```sh
-curl -fsSL https://johnhenning.dev/tools/dotfiles/install.sh | sh -s -- --apply
+curl -fsSL https://johnhenning.dev/tools/dotfiles/install.sh | sh -s -- --dry-run
 ```
 
-Apply asks for confirmation through your terminal. `--apply --yes` enables an
-explicitly unattended setup. Existing managed files are backed up privately
+`--preview` is an alias for `--dry-run`; both still download the manager and
+source, but leave your configs unchanged. `--yes` confirms an unattended install
+and cannot be combined with a preview flag. The previous `--apply` flag remains
+an explicit install alias. Existing managed files are backed up privately
 under `~/.local/state/john-dotfiles/backups/` before replacement. Symlink targets
 or ancestors are rejected for manual review. Unmanaged files are kept. Applying
 replaces existing rc files: move settings you want to retain into the local

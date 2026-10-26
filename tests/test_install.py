@@ -34,11 +34,32 @@ class InstallTests(unittest.TestCase):
         result = self.run_script('scripts/manage.sh', 'apply', '--yes')
         self.assertEqual(result.returncode, 0, result.stderr)
 
-    def test_bootstrap_defaults_to_preview(self):
-        result = self.run_script('install.sh', '--source', str(ROOT))
+    def test_bootstrap_installs_by_default_with_unattended_confirmation(self):
+        result = self.run_script('install.sh', '--source', str(ROOT), '--yes')
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn('Preview only', result.stdout)
-        self.assertFalse((self.home / '.zshrc').exists())
+        self.assertIn('Dotfiles applied successfully', result.stdout)
+        self.assertTrue((self.home / '.zshrc').exists())
+        self.assertTrue((self.home / '.local/bin/dotfiles').exists())
+
+    def test_bootstrap_dry_run_and_preview_leave_configs_unchanged(self):
+        existing = self.home / '.zshrc'
+        existing.write_text('# keep my settings\n')
+        for flag in ('--dry-run', '--preview'):
+            with self.subTest(flag=flag):
+                result = self.run_script('install.sh', '--source', str(ROOT), flag)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn('Preview only', result.stdout)
+                self.assertEqual(existing.read_text(), '# keep my settings\n')
+                self.assertFalse((self.home / '.local/bin/dotfiles').exists())
+                self.assertFalse((self.home / '.local/state/john-dotfiles/backups').exists())
+
+    def test_preview_cannot_be_combined_with_install_confirmation(self):
+        for flags in [('--dry-run', '--yes'), ('--yes', '--preview'),
+                      ('--apply', '--dry-run'), ('--preview', '--apply')]:
+            with self.subTest(flags=flags):
+                result = self.run_script('install.sh', '--source', str(ROOT), *flags)
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertFalse((self.home / '.zshrc').exists())
 
     def test_apply_backs_up_conflicts_preserves_local_files_and_is_idempotent(self):
         (self.home / '.zshrc').write_text('# previous settings\n')

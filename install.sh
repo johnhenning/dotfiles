@@ -1,21 +1,23 @@
 #!/bin/sh
-# Public bootstrap. Configuration changes always require a separate apply.
+# Public bootstrap. Install by default; preview is an explicit option.
 set -eu
 umask 077
 usage() {
   cat <<'EOF'
-Usage: install.sh [--apply] [--yes] [--source DIRECTORY]
-Default: install the manager, download the source, and preview config changes.
---apply  Back up existing managed files and apply after confirmation.
---yes    Confirm the requested apply (for unattended fresh machines).
---source Use an existing trusted checkout instead of downloading one.
+Usage: install.sh [--dry-run | --preview] [--yes] [--source DIRECTORY]
+Default: install the manager, download the source, then confirm, back up and apply configs.
+--dry-run, --preview  Show config changes without applying them (still downloads manager/source).
+--yes                Confirm installation for unattended setup; incompatible with preview.
+--apply              Explicit install alias, kept for compatibility.
+--source DIRECTORY   Use an existing trusted checkout instead of downloading one.
 Tools are optional: run `dotfiles tools` after applying.
 EOF
 }
-apply=false; yes=false; source_dir=''
+apply=true; explicit_apply=false; yes=false; source_dir=''
 while [ "$#" -gt 0 ]; do
   case $1 in
-    --apply) apply=true ;;
+    --apply) explicit_apply=true ;;
+    --dry-run|--preview) apply=false ;;
     --yes) yes=true ;;
     --source) [ "$#" -ge 2 ] || exit 2; source_dir=$2; shift ;;
     -h|--help) usage; exit 0 ;;
@@ -23,7 +25,10 @@ while [ "$#" -gt 0 ]; do
   esac
   shift
 done
-[ "$yes" = false ] || [ "$apply" = true ] || { printf '%s\n' '--yes requires --apply' >&2; exit 2; }
+if [ "$apply" = false ] && { [ "$yes" = true ] || [ "$explicit_apply" = true ]; }; then
+  printf '%s\n' '--dry-run/--preview cannot be combined with --yes or --apply' >&2
+  exit 2
+fi
 case $(uname -s) in Darwin) os=darwin ;; Linux) os=linux ;; *) printf 'Use macOS or Linux (WSL on Windows).\n' >&2; exit 1 ;; esac
 case $(uname -m) in arm64|aarch64) arch=arm64 ;; x86_64|amd64) arch=amd64 ;; *) printf 'Unsupported architecture\n' >&2; exit 1 ;; esac
 case $os-$arch in
@@ -74,9 +79,9 @@ fi
 source_dir=$(cd "$source_dir" && pwd -P)
 [ -f "$source_dir/scripts/manage.sh" ] || { printf 'Incomplete source checkout\n' >&2; exit 1; }
 export DOTFILES_SOURCE=$source_dir DOTFILES_CHEZMOI=$manager
-sh "$source_dir/scripts/manage.sh" diff
 if [ "$apply" = true ]; then
   if [ "$yes" = true ]; then sh "$source_dir/scripts/manage.sh" apply --yes; else sh "$source_dir/scripts/manage.sh" apply; fi
 else
-  printf '\nPreview only. Apply with:\n  sh "%s/install.sh" --source "%s" --apply\n' "$source_dir" "$source_dir"
+  sh "$source_dir/scripts/manage.sh" diff
+  printf '\nPreview only. No configs applied. Install with:\n  sh "%s/install.sh" --source "%s"\n' "$source_dir" "$source_dir"
 fi

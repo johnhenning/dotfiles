@@ -22,7 +22,7 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y zsh tmux
       - name: Bootstrap manager with preview only
-        run: sh install.sh --source "$GITHUB_WORKSPACE" > /dev/null
+        run: sh install.sh --source "$GITHUB_WORKSPACE" --dry-run > /dev/null
       - name: Shell syntax
         run: |
           for file in install.sh scripts/*.sh; do sh -n "$file"; done
