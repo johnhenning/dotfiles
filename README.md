@@ -14,13 +14,13 @@ Fedora and WSL use the same configs. Native Windows shells are not supported.
 Preview first (downloads the repo and a pinned, checksum-verified chezmoi):
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/johnhenning/dotfiles/main/install.sh | sh
+curl -fsSL https://johnhenning.dev/tools/dotfiles/install.sh | sh
 ```
 
 Apply after reviewing the diff:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/johnhenning/dotfiles/main/install.sh | sh -s -- --apply
+curl -fsSL https://johnhenning.dev/tools/dotfiles/install.sh | sh -s -- --apply
 ```
 
 Apply asks for confirmation through your terminal. `--apply --yes` enables an
