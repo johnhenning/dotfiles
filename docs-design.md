@@ -6,8 +6,10 @@ Configurations are static chezmoi source files under `home/`; no application
 hooks, credentials or machine inventory are executed by applying them.
 
 The bootstrap installs a pinned, verified chezmoi executable in a dedicated
-data directory and checks out this repository. Preview is the default.
-Applying requires an explicit action, backs up existing managed files locally,
+data directory and checks out this repository. Installation is the default;
+`--dry-run` and `--preview` show config changes without applying them (manager
+and source downloads still occur). Applying requires terminal confirmation or
+`--yes`, backs up existing managed files locally,
 and rejects symlink targets or ancestors. Manager state is separate from any
 other chezmoi setup. Updating fetches only a fast-forward Git revision and
 shows a diff; applying remains a separate action.
